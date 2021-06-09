@@ -1,6 +1,6 @@
 using UnityEngine;
-using game;
 using UnityEngine.UI;
+using game;
 using TMPro;
 
 namespace ui {

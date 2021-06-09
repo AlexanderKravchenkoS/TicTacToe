@@ -211,7 +211,10 @@ namespace game {
                 } else {
                     tokenModel = blueTokens[type];
                 }
-                var token = Instantiate(tokenModel, vector, tokenModel.transform.rotation, playground.transform);
+
+                var rotation = tokenModel.transform.rotation;
+
+                var token = Instantiate(tokenModel, vector, rotation, playground.transform);
                 var tokenData = new TokenData {
                     type = type,
                     isRed = isRed,
