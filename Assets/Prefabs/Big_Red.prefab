@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5110300355269439412}
   - component: {fileID: 352598511510660203}
   - component: {fileID: 9215091069813660230}
+  - component: {fileID: 601218590}
   m_Layer: 0
   m_Name: Big_Red
   m_TagString: Untagged
@@ -26,7 +27,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7215229900999429532}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: 0.15, z: 1}
   m_LocalScale: {x: 0.7, y: 0.2, z: 0.7}
   m_Children: []
@@ -95,3 +96,21 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &601218590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7215229900999429532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9d31d1f7aedabb4c955903edb1d1db9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  data:
+    x: -1.2
+    y: 2
+    isRed: 1
+    type: 2
+    isTurned: 0
