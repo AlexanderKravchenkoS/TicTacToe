@@ -8,11 +8,10 @@ namespace game {
     public class GameController : MonoBehaviour {
         [SerializeField]
         private GameObject playground;
+        [SerializeField]
+        private Resourses resourses;
 
-        // раз храним токены
-        private Option<Token>[,] board = new Option<Token>[3, 3];
-        // два храним токены
-        private List<Token> tokens = new List<Token>();
+        private Option<Token>[,] board;
 
         public bool isRedTurn;
 
@@ -21,80 +20,67 @@ namespace game {
 
         private const float TOKEN_Y = 0.15f;
 
-        // три храним токены
-        private Dictionary<TokenType, GameObject> redTokens;
-        // четыре храним токены, тебе не кажется что это перебор? 
-        private Dictionary<TokenType, GameObject> blueTokens;
-
-        // выносить все состояния победы в данном случае плохое решение, поскольку есть прямая зависимость от размера доски (что если размер доски будет 10? тоже будем записывать все варианты?)
-        private List<WinCondition> winConditions;
-
         public GameState gameState = GameState.Pause;
 
-        // Token selectedToken; - почему этому методу надо знать что эта фишка именно выбранная?
-        // в целом этот метод берёт на себя слишком много и меняет стейт => плохой метод
-        public void MoveToken(int newX, int newY, Token selectedToken) {
-            // зависимость на стейт игры, этот метод можно просто не вызывать если игра в другом состоянии
-            if (gameState != GameState.Running) {
-                return;
-            }
+        public void ProcessTurn(Token token, int newX, int newY) {
+            MoveToken(token, newX, newY, out bool cancelTurn);
 
-            Vector3 oldPosition = new Vector3(selectedToken.data.x, TOKEN_Y, selectedToken.data.y);
-            Vector3 newPosition = new Vector3(newX, TOKEN_Y, newY);
-
-            TokenData newData = new TokenData() {
-                isRed = selectedToken.data.isRed,
-                isTurned = true,
-                type = selectedToken.data.type,
-                x = newX,
-                y = newY
-            };
-
-            if (!IsCorrectMove(newData, selectedToken.data.isTurned, board)) {
-                // думаю стоило просто вернуть позицию или Option<Vector3>, чтобы указать на невозможность хода в некоторых кейсах
-                // иначе тут начинается изменение стейта и этот метод уже гораздо сложнее понять/реюзать/контролировать
-                selectedToken.gameObject.transform.position = oldPosition;
+            if (cancelTurn) {
                 return;
             }
 
             if (board[newX, newY].IsSome()) {
-                tokens.Remove(board[newX, newY].Peel());
                 Destroy(board[newX, newY].Peel().gameObject);
             }
 
-            selectedToken.gameObject.transform.position = newPosition;
-            selectedToken.data = newData;
-            board[newX, newY] = Option<Token>.Some(selectedToken);
+            board[newX, newY] = Option<Token>.Some(token);
 
-            gameState = UpdateState(tokens, board, isRedTurn);
+            gameState = CalculateState(FindObjectsOfType<Token>(), board, isRedTurn);
+
             isRedTurn = !isRedTurn;
         }
 
-        private bool IsCorrectMove(TokenData newData, bool isTurned, Option<Token>[,] board) {
+        private void MoveToken(Token token, int newX, int newY, out bool cancelTurn) {
+            cancelTurn = false;
+            if (!IsCorrectMove(token.data, newX, newY)) {
+                var position = new Vector3(token.data.x, TOKEN_Y, token.data.y);
+                token.gameObject.transform.position = position;
+                cancelTurn = true;
+                return;
+            }
 
-            int x = (int)newData.x;
-            int y = (int)newData.y;
+            token.gameObject.transform.position = new Vector3(newX, TOKEN_Y, newY);
+            TokenData newData = new TokenData() {
+                isRed = token.data.isRed,
+                isTurned = true,
+                size = token.data.size,
+                x = newX,
+                y = newY
+            };
+            token.data = newData;
+        }
 
-            if (isTurned) {
+        private bool IsCorrectMove(TokenData tokenData, int newX, int newY) {
+
+            if (tokenData.isTurned) {
                 return false;
             }
 
-            if (x < MIN_BOUND || x > MAX_BOUND || y < MIN_BOUND || y > MAX_BOUND) {
+            if (newX < MIN_BOUND || newX > MAX_BOUND || newY < MIN_BOUND || newY > MAX_BOUND) {
                 return false;
             }
 
-            if (isRedTurn != newData.isRed) {
+            if (isRedTurn != tokenData.isRed) {
                 return false;
             }
 
-            if (board[x, y].IsSome()) {
+            if (board[newX, newY].IsSome()) {
 
-                if (board[x, y].Peel().data.isRed == newData.isRed) {
+                if (board[newX, newY].Peel().data.isRed == tokenData.isRed) {
                     return false;
                 }
 
-                // эта строчка путает, сравнение энамов, которые называются type, возможно название size подошло бы лучше
-                if (board[x, y].Peel().data.type >= newData.type) {
+                if (board[newX, newY].Peel().data.size >= tokenData.size) {
                     return false;
                 }
             }
@@ -102,9 +88,8 @@ namespace game {
             return true;
         }
 
-        // UpdateState, но при этом метод возвращает стейт. CalculateState подошло бы лучше
-        private GameState UpdateState(List<Token> tokens, Option<Token>[,] board, bool isRedTurn) {
-            if (IsWin(board, isRedTurn)) {
+        private GameState CalculateState(Token[] tokens, Option<Token>[,] board, bool isRedTurn) {
+            if (IsWin(board)) {
                 if (isRedTurn) {
                     return GameState.RedWin;
                 } else {
@@ -119,8 +104,88 @@ namespace game {
             return GameState.Running;
         }
 
-        private bool IsDraw(List<Token> tokens, Option<Token>[,] board, bool isRedTurn) {
+        private bool IsWin(Option<Token>[,] board) {
+            int boardSize = board.GetLength(0);
+            int counter;
+            TokenData firstData;
+            TokenData secondData;
+
+
+            for (int i = 0; i < boardSize; i++) {
+                counter = 1;
+                for (int j = 0; j < boardSize - 1; j++) {
+                    if (board[i, j].IsNone() || board[i, j + 1].IsNone()) {
+                        break;
+                    }
+                    firstData = board[i, j].Peel().data;
+                    secondData = board[i, j + 1].Peel().data;
+                    if (firstData.isRed != secondData.isRed) {
+                        break;
+                    }
+                    counter++;
+                }
+                if (counter == boardSize) {
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < boardSize; i++) {
+                counter = 1;
+                for (int j = 0; j < boardSize - 1; j++) {
+                    if (board[j, i].IsNone() || board[j + 1, i].IsNone()) {
+                        break;
+                    }
+                    firstData = board[j, i].Peel().data;
+                    secondData = board[j + 1, i].Peel().data;
+                    if (firstData.isRed != secondData.isRed) {
+                        break;
+                    }
+                    counter++;
+                }
+                if (counter == boardSize) {
+                    return true;
+                }
+            }
+
+            counter = 1;
+            for (int i = 0; i < boardSize - 1; i++) {
+                if (board[i, i].IsNone() || board[i + 1, i + 1].IsNone()) {
+                    break;
+                }
+                firstData = board[i, i].Peel().data;
+                secondData = board[i + 1, i + 1].Peel().data;
+                if (firstData.isRed != secondData.isRed) {
+                    break;
+                }
+                counter++;
+            }
+            if (counter == boardSize) {
+                return true;
+            }
+
+            counter = 1;
+            for (int i = 0; i < boardSize - 1; i++) {
+                if (board[boardSize - (i + 1), i].IsNone() ||
+                    board[boardSize - (i + 2), i + 1].IsNone()) {
+                    break;
+                }
+                firstData = board[boardSize - (i + 1), i].Peel().data;
+                secondData = board[boardSize - (i + 2), i + 1].Peel().data;
+                if (firstData.isRed != secondData.isRed) {
+                    break;
+                }
+                counter++;
+            }
+            if (counter == boardSize) {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsDraw(Token[] tokens, Option<Token>[,] board, bool isRedTurn) {
             foreach (var token in tokens) {
+
                 if (token.data.isRed != isRedTurn) {
                     continue;
                 }
@@ -129,17 +194,9 @@ namespace game {
                     continue;
                 }
 
-                // что же тут все состояния ничьи не записаны?
                 for (int i = 0; i < board.GetLength(0); i++) {
                     for (int j = 0; j < board.GetLength(1); j++) {
-                        var data = new TokenData {
-                            isRed = token.data.isRed,
-                            isTurned = token.data.isTurned,
-                            type = token.data.type,
-                            x = i,
-                            y = j
-                        };
-                        if (IsCorrectMove(data, false, board)) {
+                        if (IsCorrectMove(token.data, i, j)) {
                             return false;
                         }
                     }
@@ -149,41 +206,14 @@ namespace game {
             return true;
         }
 
-        private bool IsWin(Option<Token>[,] board, bool isRedTurn) {
-            foreach (WinCondition condition in winConditions) {
-
-                int counter = 0;
-
-                foreach (Vector2Int vector in condition.positions) {
-
-                    if (board[vector.x, vector.y].IsNone()) {
-                        break;
-                    }
-
-                    if (board[vector.x, vector.y].Peel().data.isRed != isRedTurn) {
-                        break;
-                    }
-
-                    counter++;
-                }
-
-                if (counter == condition.positions.Length) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // этот метод ничего не сохраняет, он просто берёт внутренние данные и превращает их в GameData, название врёт
-        public GameData SaveGame() {
+        public GameData GetGameData() {
+            var tokens = FindObjectsOfType<Token>();
             List<TokenData> tokenDatasTemp = new List<TokenData>();
             foreach (var token in tokens) {
                 tokenDatasTemp.Add(token.data);
             }
 
             var gameData = new GameData {
-                gameState = gameState,
                 isRedTurn = isRedTurn,
                 tokenDatas = tokenDatasTemp
             };
@@ -192,69 +222,57 @@ namespace game {
         }
 
         public void LoadGame(GameData gameData) {
-            // загрузка игры, но при этом мы тут уничтожаем фишки
-            if (tokens.Count != 0) {
-                for (int i = 0; i < tokens.Count; i++) {
+            ResetGame();
+            InitializeGame(gameData);
+        }
+
+        public void ResetGame() {
+            var tokens = FindObjectsOfType<Token>();
+            if (tokens.Length != 0) {
+                for (int i = 0; i < tokens.Length; i++) {
                     Destroy(tokens[i].gameObject);
                 }
             }
-            tokens = new List<Token>();
 
-            // и очищаем доску
             board = new Option<Token>[3, 3];
-            for (int i = 0; i < board.GetLength(0); i++) {
-                for (int j = 0; j < board.GetLength(1); j++) {
-                    board[i, j] = Option<Token>.None();
-                }
-            }
+        }
 
+        public void InitializeGame(GameData gameData) {
             isRedTurn = gameData.isRedTurn;
-            gameState = gameData.gameState;
+            gameState = GameState.Running;
 
             foreach (var item in gameData.tokenDatas) {
                 var x = item.x;
                 var y = item.y;
                 var isRed = item.isRed;
                 var isTurned = item.isTurned;
-                var type = item.type;
+                var type = item.size;
 
                 var vector = new Vector3(x, TOKEN_Y, y);
 
                 GameObject tokenModel;
 
                 if (isRed) {
-                    tokenModel = redTokens[type];
+                    tokenModel = resourses.redTokensPrefabs[type];
                 } else {
-                    tokenModel = blueTokens[type];
+                    tokenModel = resourses.blueTokensPrefabs[type];
                 }
 
                 var rotation = tokenModel.transform.rotation;
 
                 var token = Instantiate(tokenModel, vector, rotation, playground.transform);
                 var tokenData = new TokenData {
-                    type = type,
+                    size = type,
                     isRed = isRed,
                     isTurned = isTurned,
                     x = x,
                     y = y
                 };
                 token.GetComponent<Token>().data = tokenData;
-                tokens.Add(token.GetComponent<Token>());
                 if (x >= MIN_BOUND && x <= MAX_BOUND && y >= MIN_BOUND && y <= MAX_BOUND) {
                     board[(int)x, (int)y] = Option<Token>.Some(token.GetComponent<Token>());
                 }
             }
-        }
-
-        public void UpdateResourses(
-            Dictionary<TokenType, GameObject> redTokens,
-            Dictionary<TokenType, GameObject> blueTokens,
-            List<WinCondition> winConditions
-            ) {
-
-            this.redTokens = redTokens;
-            this.blueTokens = blueTokens;
-            this.winConditions = winConditions;
         }
     }
 }

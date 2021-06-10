@@ -4,76 +4,75 @@
             "x":-2.2,
             "y":0.0,
             "isRed":true,
-            "type":0,
+            "size":0,
             "isTurned":false
         },{
             "x":-1.2,
             "y":1.0,
             "isRed":true,
-            "type":1,
+            "size":1,
             "isTurned":false
         },{
             "x":-2.2,
             "y":2.0,
             "isRed":true,
-            "type":2,
+            "size":2,
             "isTurned":false
         },{
             "x":4.2,
             "y":1.0,
             "isRed":false,
-            "type":1,
+            "size":1,
             "isTurned":false
         },{
             "x":4.2,
             "y":2.0,
             "isRed":false,
-            "type":2,
+            "size":2,
             "isTurned":false
         },{
             "x":3.2,
             "y":0.0,
             "isRed":false,
-            "type":0,
+            "size":0,
             "isTurned":false
         },{
             "x":-1.2,
             "y":2.0,
             "isRed":true,
-            "type":2,
+            "size":2,
             "isTurned":false
         },{
             "x":3.2,
             "y":2.0,
             "isRed":false,
-            "type":2,
+            "size":2,
             "isTurned":false
         },{
             "x":-1.2,
             "y":0.0,
             "isRed":true,
-            "type":0,
+            "size":0,
             "isTurned":false
         },{
             "x":-2.2,
             "y":1.0,
             "isRed":true,
-            "type":1,
+            "size":1,
             "isTurned":false
         },{
             "x":4.2,
             "y":0.0,
             "isRed":false,
-            "type":0,
+            "size":0,
             "isTurned":false
         },{
             "x":3.2,
             "y":1.0,
             "isRed":false,
-            "type":1,
+            "size":1,
             "isTurned":false
         }
     ],
-    "isRedTurn":true,
-    "gameState":1
+    "isRedTurn":true
 }

@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEngine;
+using vjp;
 
 namespace game {
     // save this loader
@@ -27,31 +28,97 @@ namespace game {
         }
 
         private void LoadGameData(string filePath) {
-            // ну допустим вот здесь файл существует
-            if (!File.Exists(filePath)) {
-                // и никакого сообщения
+            string jsonData = LoadTextFromFile(filePath);
+            if (string.IsNullOrWhiteSpace(jsonData)) {
+                Debug.LogError("No data in json file");
                 return;
             }
 
-            // а вот здесь ОС переключила процесс игры на процесс программы, которая удалила файл по пути filePath
+            var optionGameData = DeserializeGameData(jsonData);
 
-            // упс, эксепшн?
-            using StreamReader reader = new StreamReader(filePath);
-            string json = reader.ReadToEnd();
-            // кидает ли JSONUtility эксепшны? что если json невалидный?
-            var gameData = JsonUtility.FromJson<GameData>(json);
+            if (optionGameData.IsNone()) {
+                Debug.LogError("Wrong json data in loaded file");
+                return;
+            }
 
-            gameController.LoadGame(gameData);
+            gameController.LoadGame(optionGameData.Peel());
         }
 
         public void SaveGame() {
-            var gameData = gameController.SaveGame();
+            var gameData = gameController.GetGameData();
 
-            string json = JsonUtility.ToJson(gameData);
+            if (gameData.tokenDatas == null) {
+                Debug.LogError("Wrong data to save");
+                return;
+            }
 
-            // а тут видимо saveGamePath даже не нужно пытаться проверить
-            using (StreamWriter streamWriter = new StreamWriter(saveGamePath)) {
-                streamWriter.Write(json);
+            string jsonData = SerializeGameData(gameData);
+
+            if (string.IsNullOrWhiteSpace(jsonData)) {
+                Debug.LogError("Incorrect serialization");
+                return;
+            }
+
+            SaveTextToFile(saveGamePath, jsonData);
+        }
+
+        public string SerializeGameData(GameData gameData) {
+
+            if (gameData.tokenDatas == null) {
+                Debug.LogError("Wrong data to serialize");
+                return null;
+            }
+
+            try {
+                return JsonUtility.ToJson(gameData);
+            } catch (System.Exception ex) {
+                Debug.LogError($"Serialization Error - {ex.Message}");
+                return null;
+            }
+        }
+
+        public Option<GameData> DeserializeGameData(string json) {
+
+            if (string.IsNullOrWhiteSpace(json)) {
+                Debug.LogError("No data to deserialize");
+                return Option<GameData>.None();
+            }
+
+            try {
+                var gameData = JsonUtility.FromJson<GameData>(json);
+                return Option<GameData>.Some(gameData);
+            } catch (System.Exception ex) {
+                Debug.LogError($"Deserialization Error - {ex.Message}");
+                return Option<GameData>.None();
+            }
+        }
+
+        private string LoadTextFromFile(string path) {
+            using (StreamReader reader = new StreamReader(path)) {
+
+                if (!File.Exists(path)) {
+                    Debug.LogError("File does not exist");
+                    return null;
+                }
+
+                try {
+                    string json = reader.ReadToEnd();
+                    return json;
+                } catch (System.Exception ex) {
+                    Debug.LogError(ex.Message);
+                    return null;
+                }
+            }
+        }
+
+        private void SaveTextToFile(string path, string text) {
+            using (StreamWriter streamWriter = new StreamWriter(path)) {
+                try {
+                    streamWriter.Write(text);
+                } catch (System.Exception ex) {
+                    Debug.LogError(ex.Message);
+                    return;
+                }
             }
         }
     }

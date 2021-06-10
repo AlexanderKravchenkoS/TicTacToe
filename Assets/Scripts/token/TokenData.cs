@@ -5,12 +5,12 @@ namespace token {
         public float y;
         // почему не enum?
         public bool isRed;
-        public TokenType type;
+        public TokenSize size;
         // в кого превратился?
         public bool isTurned;
     }
 
-    public enum TokenType {
+    public enum TokenSize {
         Small,
         Medium,
         Big

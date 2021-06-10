@@ -4,27 +4,32 @@ using game;
 using token;
 
 namespace resourse {
-    // ResourceFiller - значит он заполняет ресурсы, верно?
     public class ResourseFiller : MonoBehaviour {
         public Resourses resourses;
-        public GameController gameController;
+
+        public GameObject redSmallToken;
+        public GameObject redMediumToken;
+        public GameObject redBigToken;
+        public GameObject blueSmallToken;
+        public GameObject blueMediumToken;
+        public GameObject blueBigToken;
 
         private void Awake() {
 
-            Dictionary<TokenType, GameObject> redTokens = new Dictionary<TokenType, GameObject> {
-                { TokenType.Small, resourses.redSmallToken },
-                { TokenType.Medium, resourses.redMediumToken },
-                { TokenType.Big, resourses.redBigToken },
+            var redTokensPrefabs = new Dictionary<TokenSize, GameObject> {
+                { TokenSize.Small, redSmallToken },
+                { TokenSize.Medium, redMediumToken },
+                { TokenSize.Big, redBigToken },
             };
 
-            Dictionary<TokenType, GameObject> blueTokens = new Dictionary<TokenType, GameObject> {
-                { TokenType.Small, resourses.blueSmallToken },
-                { TokenType.Medium, resourses.blueMediumToken },
-                { TokenType.Big, resourses.blueBigToken },
+            var blueTokensPrefabs = new Dictionary<TokenSize, GameObject> {
+                { TokenSize.Small, blueSmallToken },
+                { TokenSize.Medium, blueMediumToken },
+                { TokenSize.Big, blueBigToken },
             };
 
-            // что-то не похоже на ресурсы
-            gameController.UpdateResourses(redTokens, blueTokens, resourses.winConditions);
+            resourses.blueTokensPrefabs = blueTokensPrefabs;
+            resourses.redTokensPrefabs = redTokensPrefabs;
         }
     }
 }
