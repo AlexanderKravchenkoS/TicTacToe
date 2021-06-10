@@ -4,6 +4,7 @@ using game;
 using token;
 
 namespace resourse {
+    // ResourceFiller - значит он заполняет ресурсы, верно?
     public class ResourseFiller : MonoBehaviour {
         public Resourses resourses;
         public GameController gameController;
@@ -22,6 +23,7 @@ namespace resourse {
                 { TokenType.Big, resourses.blueBigToken },
             };
 
+            // что-то не похоже на ресурсы
             gameController.UpdateResourses(redTokens, blueTokens, resourses.winConditions);
         }
     }

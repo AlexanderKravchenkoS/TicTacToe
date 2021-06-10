@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace resourse {
     public class Resourses : MonoBehaviour {
+        // зачем тут всюду [SerializeField]?
         [SerializeField]
         public GameObject redSmallToken;
         [SerializeField]

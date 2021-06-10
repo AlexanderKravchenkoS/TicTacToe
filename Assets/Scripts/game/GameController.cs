@@ -9,7 +9,9 @@ namespace game {
         [SerializeField]
         private GameObject playground;
 
+        // раз храним токены
         private Option<Token>[,] board = new Option<Token>[3, 3];
+        // два храним токены
         private List<Token> tokens = new List<Token>();
 
         public bool isRedTurn;
@@ -19,14 +21,20 @@ namespace game {
 
         private const float TOKEN_Y = 0.15f;
 
+        // три храним токены
         private Dictionary<TokenType, GameObject> redTokens;
+        // четыре храним токены, тебе не кажется что это перебор? 
         private Dictionary<TokenType, GameObject> blueTokens;
 
+        // выносить все состояния победы в данном случае плохое решение, поскольку есть прямая зависимость от размера доски (что если размер доски будет 10? тоже будем записывать все варианты?)
         private List<WinCondition> winConditions;
 
         public GameState gameState = GameState.Pause;
 
+        // Token selectedToken; - почему этому методу надо знать что эта фишка именно выбранная?
+        // в целом этот метод берёт на себя слишком много и меняет стейт => плохой метод
         public void MoveToken(int newX, int newY, Token selectedToken) {
+            // зависимость на стейт игры, этот метод можно просто не вызывать если игра в другом состоянии
             if (gameState != GameState.Running) {
                 return;
             }
@@ -43,6 +51,8 @@ namespace game {
             };
 
             if (!IsCorrectMove(newData, selectedToken.data.isTurned, board)) {
+                // думаю стоило просто вернуть позицию или Option<Vector3>, чтобы указать на невозможность хода в некоторых кейсах
+                // иначе тут начинается изменение стейта и этот метод уже гораздо сложнее понять/реюзать/контролировать
                 selectedToken.gameObject.transform.position = oldPosition;
                 return;
             }
@@ -83,6 +93,7 @@ namespace game {
                     return false;
                 }
 
+                // эта строчка путает, сравнение энамов, которые называются type, возможно название size подошло бы лучше
                 if (board[x, y].Peel().data.type >= newData.type) {
                     return false;
                 }
@@ -91,6 +102,7 @@ namespace game {
             return true;
         }
 
+        // UpdateState, но при этом метод возвращает стейт. CalculateState подошло бы лучше
         private GameState UpdateState(List<Token> tokens, Option<Token>[,] board, bool isRedTurn) {
             if (IsWin(board, isRedTurn)) {
                 if (isRedTurn) {
@@ -117,6 +129,7 @@ namespace game {
                     continue;
                 }
 
+                // что же тут все состояния ничьи не записаны?
                 for (int i = 0; i < board.GetLength(0); i++) {
                     for (int j = 0; j < board.GetLength(1); j++) {
                         var data = new TokenData {
@@ -162,6 +175,7 @@ namespace game {
             return false;
         }
 
+        // этот метод ничего не сохраняет, он просто берёт внутренние данные и превращает их в GameData, название врёт
         public GameData SaveGame() {
             List<TokenData> tokenDatasTemp = new List<TokenData>();
             foreach (var token in tokens) {
@@ -178,6 +192,7 @@ namespace game {
         }
 
         public void LoadGame(GameData gameData) {
+            // загрузка игры, но при этом мы тут уничтожаем фишки
             if (tokens.Count != 0) {
                 for (int i = 0; i < tokens.Count; i++) {
                     Destroy(tokens[i].gameObject);
@@ -185,6 +200,7 @@ namespace game {
             }
             tokens = new List<Token>();
 
+            // и очищаем доску
             board = new Option<Token>[3, 3];
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
